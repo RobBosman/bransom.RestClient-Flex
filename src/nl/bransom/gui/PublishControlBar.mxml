@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 verticalAlign="middle">
+
+	<fx:Script>
+		<![CDATA[
+			import nl.bransom.ChainableTask;
+			import nl.bransom.rest.RestClient;
+			
+			[Bindable] public var xml:XML;
+			[Bindable] public var restClient:RestClient;
+			[Bindable] public var publishedColor:uint = 0x00A212;
+			[Bindable] public var unpublishedColor:uint = 0xE00000;
+			
+			private function getLabelText(xml:XML, publishedFlag:String):String {
+				if (xml == null) {
+					return "";
+				} else if (publishedFlag != xml.@published) {
+					return "???";
+				} else if (xml.@published == "true") {
+					return "Deze gegevens zijn gepubliceerd.";
+				} else if (xml.@published == "false") {
+					return "Deze gegevens zijn nog niet gepubliceerd.";
+				} else {
+					return "Deze gegevens kunnen niet worden gepubliceerd.";
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<mx:Spacer width="100%" />
+	<mx:Label text="{getLabelText(xml, (xml == null ? null : xml.@published))}"
+			  color="{(xml == null || xml.@published != 'true') ? unpublishedColor : publishedColor}" />
+	<mx:Button label="{(xml == null || xml.@published != 'true') ? 'Publiceren' : 'Gepubliceerd'}"
+			   enabled="{restClient.canPublish(xml, restClient.status)}" click="restClient.saveAndPublish(xml)"
+			   width="140" />
+</mx:HBox>

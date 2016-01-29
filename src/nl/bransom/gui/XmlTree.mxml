@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Tree xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:sp="library://ns.adobe.com/flex/spark"
+		 labelField="@label"
+		 showRoot="{rootLabel != null}" 
+		 dataProvider="{null}"
+		 enabled="{dataProvider != null}"
+		 creationComplete="init()">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.binding.utils.BindingUtils;
+			
+			import nl.bransom.XmlUtils;
+
+			[Bindable] public var dataXml:XML;
+			[Bindable] public var mapping:Object = {}; // { localName:'labelXPath' }
+			[Bindable] public var rootLabel:String = null;
+
+			[Bindable] private var viewXml:XML;
+			
+			private function init():void {
+				BindingUtils.bindSetter(updateTreeXml, this, "dataXml");
+			}
+			private function updateTreeXml(dataXml:XML, parentXml:XML = null):void {
+				var isRecursionTop:Boolean = (parentXml == null);
+				if (isRecursionTop) {
+					dataProvider = null;
+					viewXml = getRootXml();
+					parentXml = viewXml;
+				}
+				if (dataXml != null) {
+					var newTreeNode:XML = null;
+					var labelXPath:String = mapping[dataXml.localName()];
+					if (labelXPath != null) {
+						newTreeNode = <{dataXml.localName()} label={XmlUtils.getTextContent(dataXml, labelXPath)}
+								xpath={getXPath(dataXml)} />;
+						parentXml.appendChild(newTreeNode);
+					}
+					// Recurse all child nodes.
+					for each (var childXml:XML in dataXml.children()) {
+						updateTreeXml(childXml, (newTreeNode != null ? newTreeNode : parentXml));
+					}
+					if (isRecursionTop) {
+						dataProvider = viewXml;
+					}
+				}
+			}
+			private function getRootXml():XML {
+				var attributeName:String = labelField;
+				if (attributeName.indexOf("@") == 0) {
+					attributeName = attributeName.substr(1);
+				}
+				var rootXml:XML = <root {attributeName}={rootLabel}/>;
+				return rootXml;
+			}
+			
+			private function getXPath(xml:XML):String {
+				var xpath:String = getXPathFragment(xml);
+				while (xml.parent() != null) {
+					xml = xml.parent();
+					xpath = getXPathFragment(xml) + xpath;
+				}
+				return xpath;
+			}
+			private function getXPathFragment(xml:XML):String {
+				var xpathFragment:String = "/";
+				if (xml != null) {
+					xpathFragment += xml.localName();
+					if (xml.@id.length() > 0) {
+						xpathFragment += "[@id='" + xml.@id + "']";
+					}
+				}
+				return xpathFragment;
+			}
+			
+			public function expandAll():void {
+				validateNow();
+				expandChildrenOf(viewXml, true);
+			}
+
+			public function getSelectedXmlList(selectedItems:Array = null):XMLList {
+				if (selectedItems == null) {
+					selectedItems = this.selectedItems;
+				}
+				var xmlList:XMLList = new XMLList();
+				for each (var item:Object in selectedItems) {
+					var xml:XML = findXml(item.@xpath);
+					if (xml != null) {
+						xmlList += xml;
+					}
+				}
+				return xmlList;
+			}
+			private function findXml(xpath:String):XML {
+				var xml:XML = null;
+				for each (var xpathPart:String in xpath.split(/\//)) {
+					var nodeName:String = xpathPart.replace(/\[.*/, "");
+					if (nodeName != "") {
+						if (xml == null) {
+							xml = dataXml
+						} else {
+							var xmlList:XMLList = XmlUtils.getElements(xml, nodeName);
+							var selector:String = xpathPart.replace(/.*\[(.+)\]/, "$1");
+							if (selector.length == 0) {
+								xml = xmlList[0];
+							} else {
+								var id:String = selector.split(/['"]/)[1];
+								for each (var xmlElement:XML in xmlList) {
+									if (xmlElement.@id == id) {
+										xml = xmlElement;
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+				return xml;
+			}
+		]]>
+	</fx:Script>
+
+</mx:Tree>

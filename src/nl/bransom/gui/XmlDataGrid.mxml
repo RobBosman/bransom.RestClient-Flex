@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:DataGrid xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			 xmlns:mx="library://ns.adobe.com/flex/mx"
+			 enabled="{dataProvider.source != null}"
+			 dragEnabled="{orderChangedFunction != null}"
+			 dropEnabled="{orderChangedFunction != null}"
+			 dragMoveEnabled="{orderChangedFunction != null}"
+			 dragStart="dragStartFunction(event)"
+			 dragDrop="dragDropFunction(event)"
+			 dragComplete="dragCompleteFunction(event)"
+			 headerRelease="headerReleaseFunction(event)"
+			 creationComplete="init()">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.collections.Sort;
+			import mx.collections.SortField;
+			import mx.collections.XMLListCollection;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CollectionEvent;
+			import mx.events.CollectionEventKind;
+			import mx.events.DataGridEvent;
+			import mx.events.DragEvent;
+			import mx.managers.DragManager;
+			
+			import nl.bransom.XmlUtils;
+			
+			public var fieldNames:ArrayCollection;
+			[Bindable] public var orderChangedFunction:Function;
+			
+			private var columnSortFunctionMap:Object = {};
+			private var sortColumnIndex:int;
+			private var dragStartIndex:int;
+			
+			private function init(): void {
+				dataProvider = new XMLListCollection();
+				if (sortableColumns) {
+					// Keep a copy of all sortFunctions in an array...
+					for (var i:int = 0; i < columns.length; i++) {
+						var column:DataGridColumn = columns[i];
+						if (column.sortable) {
+							if (column.sortCompareFunction != null) {
+								columnSortFunctionMap[i] = column.sortCompareFunction;
+							} else {
+								columnSortFunctionMap[i] = defaultSortCompareFunction;
+							}
+						}
+						// ...and reset the column sortCompareFunction.
+						// This will effectively switch-off the auto sort function. Auto sort causes losing the focus
+						// while editing a grid cell. Very annoying!
+						column.sortCompareFunction = null;
+					}
+				}
+			}
+			private function defaultSortCompareFunction(a:Object, b:Object, sortFields:Array = null):int {
+				if ((sortColumnIndex >= 0) && (sortColumnIndex < fieldNames.length)) {
+					return XmlUtils.compareProperties(a as XML, b as XML, fieldNames[sortColumnIndex],
+						Array.CASEINSENSITIVE);
+				} else {
+					return 0;
+				}
+			}
+
+			private function headerReleaseFunction(event:DataGridEvent): void {
+				sortColumnIndex = event.columnIndex;
+				var column:DataGridColumn = columns[sortColumnIndex];
+				
+				// Create the Sort instance.
+				var sort:Sort = new Sort();
+				var sortField:SortField = new SortField();
+				sortField.compareFunction = columnSortFunctionMap[sortColumnIndex];
+				sortField.descending = column.sortDescending;
+				sort.fields = [ sortField ];
+				
+				// Sort the collection.
+				dataProvider.sort = sort;
+				dataProvider.refresh();
+				// Be sure to remove the sort again. This prevents automatic sorting while editing DataGrid fields.
+				dataProvider.sort = null;
+				
+				// Don't let the default DataGrid sorting interfere.
+				event.preventDefault();
+				
+				// Show the sort arrow.
+				mx_internal::sortIndex = sortColumnIndex;
+				mx_internal::sortDirection = (column.sortDescending) ? "DESC" : "ASC";
+				placeSortArrow();
+
+				// Next time reverse the sorting order of the column.
+				column.sortDescending = !column.sortDescending;
+			}
+			
+			override protected function collectionChangeHandler(event:Event):void {
+				// Handle any event...
+				super.collectionChangeHandler(event);
+				// ...and ensure that the selected item remains visible after sorting.
+				if (event is CollectionEvent) {
+					var collectionEvent:CollectionEvent = CollectionEvent(event);
+					if ((collectionEvent.kind == CollectionEventKind.MOVE) && (collectionEvent.location >= 0)) {
+						scrollToIndex(collectionEvent.location);
+					}
+				}
+			}
+			
+			private function dragStartFunction(event:Event): void {
+				dragStartIndex = selectedIndex;
+			}
+
+			private function dragDropFunction(event:DragEvent): void {
+				// Check if the item was dropped before the first item.
+				if ((event.action != DragManager.NONE) && (event.localY < listContent.y)) {
+					// If so, then 'adjust' the event data, so the item will effectively be dropped at the top of the
+					// list.
+					event.localY = listContent.y;
+					lastDropIndex = 0;
+				}
+			}
+			
+			private function dragCompleteFunction(event:DragEvent): void {
+				if ((orderChangedFunction != null) && (event.action != DragManager.NONE)
+					&& (lastDropIndex != dragStartIndex)) {
+					orderChangedFunction();
+				}
+			}
+			
+			public function setXmlData(xmlList:XMLList):void {
+				dataProvider.source = null;
+				dataProvider.source = xmlList;
+			}
+			
+			public function getXmlData():XMLList {
+				return dataProvider.source;
+			}
+		]]>
+	</fx:Script>
+
+</mx:DataGrid>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TextArea xmlns:fx="http://ns.adobe.com/mxml/2009"
+			 xmlns:mx="library://ns.adobe.com/flex/mx"
+			 enabled="{objectXml != null}"
+			 text="{XmlUtils.getTextContent(objectXml, propertyName)}"
+			 change="restClient.setTextContent(objectXml, propertyName, text, asCData)">
+	<fx:Script>
+		<![CDATA[
+			import nl.bransom.XmlUtils;
+			import nl.bransom.rest.RestClient;
+
+			[Bindable] public var restClient:RestClient;
+			[Bindable] public var objectXml:XML;
+			[Bindable] public var propertyName:String;
+			[Bindable] public var asCData:Boolean = false;
+		]]>
+	</fx:Script>
+</mx:TextArea>

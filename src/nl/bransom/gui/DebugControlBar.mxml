@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:ApplicationControlBar xmlns:mx="library://ns.adobe.com/flex/mx"
+						  xmlns:fx="http://ns.adobe.com/mxml/2009"
+						  enabled="{restClient != null}"
+						  visible="false"
+						  creationComplete="init()">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.binding.utils.BindingUtils;
+			
+			import nl.bransom.rest.RestClient;
+			
+			[Bindable] public var appTitle:String;
+			[Bindable] public var restClient:RestClient;
+			
+			private function init():void {
+				// Show or hide the debug control box.
+				if (Utils.getUrlParam(Utils.getCurrentUrl(appTitle), "DEBUG") != null) {
+					// Ensure that AutoSave will initially be switched-off by default when in debug mode.
+					BindingUtils.bindSetter(switchOffAutoSave, this, "restClient");
+					percentWidth = 100;
+					visible = true;
+				} else {
+					visible = false;
+					height = 0;
+					width = 0;
+				}
+			}
+			private function switchOffAutoSave(restClient:RestClient):void {
+				if (restClient == null) {
+					return;
+				}
+				restClient.useAutoSave = false;
+			}
+
+			private function showXml():void {
+				for (var contextId:String in restClient.xmlMap) {
+					Utils.alert(contextId + ":\n" + restClient.xmlMap[contextId], 'DEBUG');
+				}
+			}
+
+			private function reload(event:Event = null):void {
+				for (var contextId:String in restClient.xmlMap) {
+					var xml:XML = restClient.xmlMap[contextId];
+					if (xml != null) {
+						var restTarget:String = xml.localName();
+						if (xml.@id != null) {
+							restTarget += "/" + xml.@id;
+						}
+						restClient.read(contextId, restTarget, null, null);
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<mx:Label text="DEBUG" fontWeight="bold" />
+	<mx:Spacer width="100%" />
+	<mx:Button label="xml" click="showXml()" />
+	<mx:CheckBox label="proxy" id="proxyCheck" change="restClient.DEBUG_viaProxy = proxyCheck.selected" />
+	<mx:Button label="reload" click="reload()" />
+</mx:ApplicationControlBar>

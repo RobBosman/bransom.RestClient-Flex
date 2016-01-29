@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   horizontalScrollPolicy="off" verticalScrollPolicy="off"
+		   creationComplete="init()">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.utils.Base64Decoder;
+			
+			import nl.bransom.XmlUtils;
+
+			[Bindable] public var objectXml:XML;
+			[Bindable] public var propertyName:String;
+			[Bindable] public var showWhenEmpty:Boolean = true;
+
+			private var initWidth:Number = -1;
+			private var initHeight:Number = -1;
+			private var base64Decoder:Base64Decoder = new Base64Decoder();
+
+			private function init():void {
+				initWidth = width;
+				initHeight = height;
+				updateVisibility();
+			}
+
+			private function updateVisibility():void {
+				if ((showWhenEmpty) || (image.source != null)) {
+					width = initWidth;
+					height = initHeight;
+					visible = true;
+				} else {
+					width = 0;
+					height = 0;
+					visible = false;
+				}
+			}
+
+			private function getImageData(objectXml:XML, propertyName:String):Object {
+				var base64ImageData:String = XmlUtils.getTextContent(objectXml, propertyName);
+				if (base64ImageData.length == 0) {
+					return null;
+				} else {
+					base64Decoder.reset();
+					base64Decoder.decode(base64ImageData);
+					return base64Decoder.toByteArray();
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<mx:Image id="image" source="{getImageData(objectXml, propertyName)}"
+			  visible="{image.source != null}" show="updateVisibility()" hide="updateVisibility()"
+			  horizontalAlign="center" verticalAlign="top" width="100%" height="100%"/>
+</mx:Canvas>

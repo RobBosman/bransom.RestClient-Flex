@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TileList xmlns:fx="http://ns.adobe.com/mxml/2009"
+			 xmlns:mx="library://ns.adobe.com/flex/mx"
+			 dataProvider="{listCollection}"
+			 dragEnabled="{orderChangedFunction != null}"
+			 dropEnabled="{orderChangedFunction != null}"
+			 dragMoveEnabled="{orderChangedFunction != null}"
+			 dragStart="dragStartFunction(event)"
+			 dragComplete="dragCompleteFunction(event)"
+			 creationComplete="init()">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.XMLListCollection;
+			import mx.events.DragEvent;
+			import mx.managers.DragManager;
+			
+			import nl.bransom.XmlUtils;
+
+			[Bindable] public var objectXml:XML;
+			[Bindable] public var itemPropertyName:String;
+			[Bindable] public var sortFunction:Function;
+			[Bindable] public var orderChangedFunction:Function;
+
+			[Bindable] private var listCollection:XMLListCollection;
+			
+			private var dragStartIndex:int;
+
+			private function init():void {
+				BindingUtils.bindSetter(refresh, this, "objectXml");
+			}
+			
+			private function dragStartFunction(event:Event): void {
+				dragStartIndex = selectedIndex;
+			}
+			private function dragCompleteFunction(event:DragEvent): void {
+				if ((orderChangedFunction != null) && (event.action != DragManager.NONE)
+					&& (lastDropIndex != dragStartIndex)) {
+					orderChangedFunction();
+				}
+			}
+
+			public function refresh(dummy:Object = null):void {
+				if ((objectXml == null) || (itemPropertyName == null)) {
+					listCollection = new XMLListCollection();
+					return;
+				}
+				if (sortFunction != null) {
+					sortFunction();
+				}
+				listCollection = new XMLListCollection(XmlUtils.getElements(objectXml, itemPropertyName));
+			}
+
+			public function getListCollection():XMLListCollection {
+				return listCollection;
+			}
+
+			public function getScrollWidth():Number {
+				return scrollRect.width;
+			}
+		]]>
+	</fx:Script>
+</mx:TileList>

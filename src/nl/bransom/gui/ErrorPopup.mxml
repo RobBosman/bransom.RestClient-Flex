@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="library://ns.adobe.com/flex/mx"
+				xmlns:fx="http://ns.adobe.com/mxml/2009"
+				show="showWindow()"
+				hide="hideWindow()"
+				title="FOUT">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			import mx.utils.Base64Encoder;
+			
+			import nl.bransom.XmlUtils;
+
+			public var afterErrorCallback:Function = null;
+
+			private var messageText:String;
+
+			public function show(parentWindow:DisplayObject, messageText:String):void {
+				if ((messageText == null) || (messageText.length == 0)) {
+					return;
+				}
+				this.messageText = messageText;
+				maxWidth = parentWindow.width * 0.95;
+				maxHeight = parentWindow.height * 0.95;
+				// Pop-up the dialog.
+				PopUpManager.addPopUp(this, parentWindow, true);
+				PopUpManager.centerPopUp(this);
+			}
+			
+			private function showWindow():void {
+				try {
+					var messageXml:XML = new XML(messageText);
+					var htmlBody:XML = XmlUtils.getElements(messageXml, "body")[0];
+					if (htmlBody != null) {
+						messageTextGui.htmlText = htmlBody.children();
+					} else {
+						messageTextGui.htmlText = messageXml;
+					}
+				} catch (e:Error) {
+					// It's not proper XML.
+					messageTextGui.text = messageText;
+				}
+				messageTextGui.width = Math.min(800, maxWidth);
+				messageTextGui.height = Math.min(200, maxHeight);
+				PopUpManager.centerPopUp(this);
+			}
+			
+			private function hideWindow():void {
+				PopUpManager.removePopUp(this);
+				if (afterErrorCallback != null) {
+					afterErrorCallback();
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<mx:VBox defaultButton="{okButtonGui}">
+		<mx:TextArea id="messageTextGui" borderStyle="none" editable="false" />
+		<mx:HRule width="100%" />
+		<mx:HBox horizontalAlign="center" width="100%">
+			<mx:Button label="OK" click="hideWindow()" id="okButtonGui" />
+		</mx:HBox>
+	</mx:VBox>
+</mx:TitleWindow>

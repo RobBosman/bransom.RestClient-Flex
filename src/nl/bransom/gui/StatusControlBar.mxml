@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:ApplicationControlBar xmlns:mx="library://ns.adobe.com/flex/mx"
+						  xmlns:fx="http://ns.adobe.com/mxml/2009"
+						  styleName="{getStatusStyleName(restClient.status)}">
+
+	<fx:Script>
+		<![CDATA[
+			import nl.bransom.PersistencyStatus;
+			import nl.bransom.rest.RestClient;
+
+			[Bindable] public var restClient:RestClient;
+			
+			private function getStatusStyleName(status:PersistencyStatus):String {
+				if ((restClient.status == PersistencyStatus.CHANGED)
+					|| (restClient.status == PersistencyStatus.SAVING)) {
+					return "status-control-bar-changed";
+				} else {
+					return "status-control-bar";
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<mx:DateFormatter id="dateFormatter" formatString="JJ:NN:SS"/>
+	</fx:Declarations>
+	
+	<mx:Label text="Status:" fontWeight="bold" />
+	<mx:Label text="{restClient.status}" />
+	<mx:Spacer width="100%" />
+	<mx:Label text="laatst opgeslagen om {dateFormatter.format(restClient.lastSaved)} uur" color="0x808080" visible="{restClient.lastSaved != null}" />
+	<mx:CheckBox label="AutoSave" id="autoSaveToggle" selected="{restClient.useAutoSave}"
+				 change="restClient.useAutoSave = autoSaveToggle.selected" />
+	<mx:Button label="{(restClient.status == PersistencyStatus.CHANGED) ? 'Nu opslaan' : 'Opgeslagen'}"
+			   enabled="{restClient.status == PersistencyStatus.CHANGED}" click="restClient.save()" />
+</mx:ApplicationControlBar>

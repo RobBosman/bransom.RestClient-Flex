@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:RadioButtonGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+					 xmlns:mx="library://ns.adobe.com/flex/mx"
+					 selectedValue="{XmlUtils.getTextContent(objectXml, propertyName)}"
+					 change="restClient.setTextContent(objectXml, propertyName, String(selectedValue))">
+	<fx:Script>
+		<![CDATA[
+			import nl.bransom.XmlUtils;
+			import nl.bransom.rest.RestClient;
+
+			[Bindable] public var restClient:RestClient;
+			[Bindable] public var objectXml:XML;
+			[Bindable] public var propertyName:String;
+		]]>
+	</fx:Script>
+</mx:RadioButtonGroup>

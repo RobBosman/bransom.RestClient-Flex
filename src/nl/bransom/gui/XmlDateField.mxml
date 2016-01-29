@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:DateField xmlns:fx="http://ns.adobe.com/mxml/2009"
+			  xmlns:mx="library://ns.adobe.com/flex/mx"
+			  enabled="{objectXml != null}"
+			  formatString="DD-MM-YYYY" width="120" editable="true"
+			  selectedDate="{xmlToDate(objectXml, propertyName)}"
+			  change="changeHandler(text)">
+	<fx:Script>
+		<![CDATA[
+			import nl.bransom.XmlUtils;
+			import nl.bransom.rest.RestClient;
+
+			[Bindable] public var restClient:RestClient;
+			[Bindable] public var objectXml:XML;
+			[Bindable] public var propertyName:String;
+			
+			private function xmlToDate(objectXml:XML, propertyName:String):Date {
+				var xmlString:String = XmlUtils.getTextContent(objectXml, propertyName);
+				// Convert 'YYYY-MM-DD' to a Date object.
+				if (xmlString != null) {
+					var parts:Array = xmlString.split('-');
+					if (parts.length == 3) {
+						return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+					}
+				}
+				return null;
+			}
+			
+			private function changeHandler(text:String):void {
+				var dateString:String = null;
+				// Convert the dateString from 'DD-MM-YYYY' to 'YYYY-MM-DD'.
+				var parts:Array = text.split('-');
+				if (parts.length == 3) {
+					dateString = parts[2] + "-" + parts[1] + "-" + parts[0];
+				}
+				restClient.setTextContent(objectXml, propertyName, dateString);
+			}
+		]]>
+	</fx:Script>
+</mx:DateField>
