@@ -145,7 +145,7 @@ package nl.bransom {
 //			Alert.show("progressHandler loaded:" + event.bytesLoaded + " total: " + event.bytesTotal, "DEBUG");
 		}
 		private function httpStatusHandler(event:HTTPStatusEvent):void {
-//			Alert.show("httpStatusHandler: " + event, "DEBUG");
+//			Alert("httpStatusHandler: " + event, "DEBUG");
 			responseCode = event.status;
 		}
 		private function completeHandler(event:Event):void {
