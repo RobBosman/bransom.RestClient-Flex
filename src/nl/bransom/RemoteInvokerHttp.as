@@ -11,6 +11,7 @@ package nl.bransom {
 	import flash.net.URLRequestMethod;
 	import flash.utils.ByteArray;
 	
+	import mx.controls.Alert;
 	import mx.netmon.NetworkMonitor;
 
 	/**
@@ -100,7 +101,7 @@ package nl.bransom {
 		
 		public function getErrorResponseHtml():String {
 			var errorMsg:String = getResponseText();
-			if (errorMsg.indexOf("Error #2032: Stream Error.") == 0) {
+			if (errorMsg.indexOf("Error #2032") == 0) {
 				errorMsg = "<b>Netwerkfout (response code " + getResponseCode() + ")</b>\n" + errorMsg;
 				if (requestXml != null) {
 					errorMsg += "\nPosted XML:\n" + XmlUtils.escapeHtml(requestXml.toXMLString());
@@ -145,15 +146,34 @@ package nl.bransom {
 //			Alert.show("progressHandler loaded:" + event.bytesLoaded + " total: " + event.bytesTotal, "DEBUG");
 		}
 		private function httpStatusHandler(event:HTTPStatusEvent):void {
-//			Alert("httpStatusHandler: " + event, "DEBUG");
+//			Alert.show("httpStatusHandler: " + event, "DEBUG");
 			responseCode = event.status;
 		}
 		private function completeHandler(event:Event):void {
 //			Alert.show("completeHandler: " + event, "DEBUG");
-			responseCode = 200;
 			readResponseFromStream();
-			if (okCallback != null) {
-				okCallback(this);
+			// If a PHP-server error occurred, we won't always receive an error response code.
+			// The real (error) response code and message are wrapped in the response text.
+			var parts:Array = responseBytes.split('|');
+			if (parts.length == 3) {
+				responseCode = parts[0];
+				if (isErrorResponseCode(responseCode)) {
+					responseBytes = "HTTP " + parts[0] + " - " + parts[1] + "\n\n" + parts[2];
+				} else {
+					responseBytes = parts[2];
+				}
+			} else {
+				responseCode = 200;
+			}
+			
+			if (!isErrorResponseCode(responseCode)) {
+				if(okCallback != null) {
+					okCallback(this);
+				}
+			} else if (errorCallback != null) {
+				errorCallback(this);
+			} else {
+				throw new Error(getResponseText());
 			}
 		}
 		
@@ -169,5 +189,8 @@ package nl.bransom {
 			}
 		}
 
+		private function isErrorResponseCode(responseCode:int):Boolean {
+			return responseCode >= 400;
+		}
 	}
 }
